@@ -174,6 +174,9 @@ const TemplateDetail = () => {
                 isReady={exportReady}
                 onExport={handleExport}
                 disabled={!exportReady}
+                templateName={template.name}
+                songName={template.trackName}
+                artist={template.artist}
               />
             </div>
             

@@ -13,13 +13,27 @@ interface Template {
   duration: number;
   beatCount: number;
   createdAt: string;
+  category?: string;
 }
 
-const TemplateGallery = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+interface TemplateGalleryProps {
+  searchQuery?: string;
+  category?: string;
+}
+
+const TemplateGallery: React.FC<TemplateGalleryProps> = ({ 
+  searchQuery: externalSearchQuery = '', 
+  category = 'all' 
+}) => {
+  const [internalSearchQuery, setInternalSearchQuery] = useState(externalSearchQuery);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([]);
+  
+  // Update internal search if external search changes
+  useEffect(() => {
+    setInternalSearchQuery(externalSearchQuery);
+  }, [externalSearchQuery]);
   
   useEffect(() => {
     // Simulate loading templates
@@ -33,7 +47,8 @@ const TemplateGallery = () => {
           albumArt: 'https://i.scdn.co/image/ab67616d0000b2732e8ed79e177ff6011076f5f0',
           duration: 180,
           beatCount: 207,
-          createdAt: '2023-08-15'
+          createdAt: '2023-08-15',
+          category: 'dance'
         },
         {
           id: 't2',
@@ -43,7 +58,8 @@ const TemplateGallery = () => {
           albumArt: 'https://i.scdn.co/image/ab67616d0000b2731e4b0a19462eca5acecfd6ad',
           duration: 195,
           beatCount: 246,
-          createdAt: '2023-09-02'
+          createdAt: '2023-09-02',
+          category: 'lifestyle'
         },
         {
           id: 't3',
@@ -53,7 +69,8 @@ const TemplateGallery = () => {
           albumArt: 'https://i.scdn.co/image/ab67616d0000b2732a038d3bf875d23e4aeaa84e',
           duration: 175,
           beatCount: 198,
-          createdAt: '2023-07-28'
+          createdAt: '2023-07-28',
+          category: 'trending'
         },
         {
           id: 't4',
@@ -63,7 +80,8 @@ const TemplateGallery = () => {
           albumArt: 'https://i.scdn.co/image/ab67616d0000b273e419ccba0baa54a0d439b9d0',
           duration: 225,
           beatCount: 302,
-          createdAt: '2023-08-22'
+          createdAt: '2023-08-22',
+          category: 'dance'
         },
         {
           id: 't5',
@@ -73,7 +91,8 @@ const TemplateGallery = () => {
           albumArt: 'https://i.scdn.co/image/ab67616d0000b2737b8d8ca1a8e14506c8f35233',
           duration: 165,
           beatCount: 187,
-          createdAt: '2023-09-10'
+          createdAt: '2023-09-10',
+          category: 'transition'
         }
       ];
       
@@ -84,19 +103,23 @@ const TemplateGallery = () => {
   }, []);
   
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredTemplates(templates);
-      return;
+    // Filter templates based on search query and category
+    let filtered = templates;
+    
+    if (internalSearchQuery.trim() !== '') {
+      filtered = filtered.filter(template => 
+        template.name.toLowerCase().includes(internalSearchQuery.toLowerCase()) ||
+        template.trackName.toLowerCase().includes(internalSearchQuery.toLowerCase()) ||
+        template.artist.toLowerCase().includes(internalSearchQuery.toLowerCase())
+      );
     }
     
-    const filtered = templates.filter(template => 
-      template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      template.trackName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      template.artist.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    if (category !== 'all') {
+      filtered = filtered.filter(template => template.category === category);
+    }
     
     setFilteredTemplates(filtered);
-  }, [searchQuery, templates]);
+  }, [internalSearchQuery, category, templates]);
   
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -113,20 +136,23 @@ const TemplateGallery = () => {
         </p>
       </div>
       
-      <div className="mb-8">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <Search className="h-5 w-5 text-muted-foreground" />
+      {/* Only show search field if no external query is provided */}
+      {!externalSearchQuery && (
+        <div className="mb-8">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <input
+              type="text"
+              className="bg-secondary/50 border border-secondary text-foreground text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-10 p-3 transition-colors"
+              placeholder="Search by song or template name..."
+              value={internalSearchQuery}
+              onChange={e => setInternalSearchQuery(e.target.value)}
+            />
           </div>
-          <input
-            type="text"
-            className="bg-secondary/50 border border-secondary text-foreground text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-10 p-3 transition-colors"
-            placeholder="Search by song or template name..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
         </div>
-      </div>
+      )}
       
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

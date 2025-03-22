@@ -3,10 +3,6 @@ import React, { useState, useRef } from 'react';
 import { Upload, Check, X, Film, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface VideoUploaderProps {
-  onVideoUpload: (file: File) => void;
-}
-
 interface VideoClip {
   id: string;
   file: File;
@@ -14,7 +10,11 @@ interface VideoClip {
   duration: number;
 }
 
-const VideoUploader: React.FC<VideoUploaderProps> = ({ onVideoUpload }) => {
+interface VideoUploaderProps {
+  onUpload: (videoUrls: string[]) => void;
+}
+
+const VideoUploader: React.FC<VideoUploaderProps> = ({ onUpload }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [clips, setClips] = useState<VideoClip[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,8 +72,13 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({ onVideoUpload }) => {
         duration
       };
       
-      setClips(prev => [...prev, newClip]);
-      onVideoUpload(file);
+      const newClips = [...clips, newClip];
+      setClips(newClips);
+      
+      // Convert clip thumbnails to URLs to pass to parent component
+      const videoUrls = newClips.map(clip => clip.thumbnail);
+      onUpload(videoUrls);
+      
       toast.success(`Added: ${file.name}`);
     } catch (error) {
       toast.error('Failed to process video');

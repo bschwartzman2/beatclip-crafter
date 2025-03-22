@@ -4,23 +4,36 @@ import { Download, Share, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface VideoExportProps {
-  templateName: string;
-  songName: string;
-  artist: string;
+  templateName?: string;
+  songName?: string;
+  artist?: string;
+  isReady?: boolean;
+  onExport?: () => void;
+  disabled?: boolean;
 }
 
 const VideoExport: React.FC<VideoExportProps> = ({ 
-  templateName, 
-  songName, 
-  artist 
+  templateName = "Custom", 
+  songName = "Unknown",
+  artist = "Unknown",
+  isReady = true,
+  onExport,
+  disabled = false
 }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [isExported, setIsExported] = useState(false);
   
   const handleExport = () => {
+    if (disabled) return;
+    
     setIsExporting(true);
     setExportProgress(0);
+    
+    // Call the onExport callback if provided
+    if (onExport) {
+      onExport();
+    }
     
     // Simulate export process with progress updates
     const interval = setInterval(() => {
@@ -57,8 +70,13 @@ const VideoExport: React.FC<VideoExportProps> = ({
       
       {!isExporting && !isExported ? (
         <button
-          className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors hover-scale"
+          className={`w-full flex items-center justify-center gap-2 p-3 rounded-lg font-medium transition-colors hover-scale ${
+            disabled 
+              ? 'bg-muted text-muted-foreground cursor-not-allowed' 
+              : 'bg-primary text-primary-foreground hover:bg-primary/90'
+          }`}
           onClick={handleExport}
+          disabled={disabled}
         >
           <Download className="h-5 w-5" />
           Export Video
