@@ -83,6 +83,21 @@
   .text-balance {
     text-wrap: balance;
   }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.5rem;
+  }
 }
 
 @keyframes float {
@@ -193,3 +208,56 @@
 .wave-bar {
   @apply bg-primary/80 w-1 rounded-t-sm animate-wave;
 }
+
+/* Template gallery styles */
+.template-card {
+  @apply rounded-lg overflow-hidden border bg-card hover-scale transition-all duration-300;
+}
+
+.template-thumbnail {
+  @apply aspect-video relative overflow-hidden;
+}
+
+.template-thumbnail img {
+  @apply w-full h-full object-cover transition-transform duration-500;
+}
+
+.template-card:hover .template-thumbnail img {
+  @apply scale-105;
+}
+
+.template-info {
+  @apply p-4;
+}
+
+.template-actions {
+  @apply absolute top-2 right-2 opacity-0 transition-opacity duration-300;
+}
+
+.template-card:hover .template-actions {
+  @apply opacity-100;
+}
+
+/* Video uploader styles */
+.upload-area {
+  @apply border-2 border-dashed border-secondary rounded-lg p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors;
+}
+
+.upload-area:hover {
+  @apply bg-secondary/20;
+}
+
+/* Beat visualization */
+.beat-viz {
+  @apply h-20 bg-secondary/30 rounded-lg relative overflow-hidden;
+}
+
+.beat-marker {
+  @apply absolute bottom-0 w-0.5 bg-primary/80;
+}
+
+/* Spotify integration */
+.spotify-button {
+  @apply bg-[#1DB954] text-white rounded-full px-6 py-3 font-medium hover:bg-[#1ED760] transition-colors;
+}
+
