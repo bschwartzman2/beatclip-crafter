@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Music, Clock, Waveform } from 'lucide-react';
+import { Music, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AudioTimelineProps {
