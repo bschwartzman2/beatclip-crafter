@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
-import { Music, Clock, UploadCloud } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Music, Clock, UploadCloud, Play, Pause } from 'lucide-react';
 import VideoUploader from './VideoUploader';
 import VideoExport from './VideoExport';
 import AudioWaveform from './AudioWaveform';
+import { Slider } from './ui/slider';
 import { toast } from 'sonner';
 
 interface TemplateMakerProps {
@@ -20,18 +21,112 @@ interface TemplateMakerProps {
 
 const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
   const [uploadedVideos, setUploadedVideos] = useState<File[]>([]);
-  
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [activeTransitionIndex, setActiveTransitionIndex] = useState<number>(-1);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number | null>(null);
+
+  // For the purpose of this demo, we'll use a mock audio source
+  const audioSrc = "https://cdn.uppbeat.io/audio-preview/UPP-preview-main-2004.mp3";
+
+  useEffect(() => {
+    // Initialize audio element
+    if (!audioRef.current) {
+      const audio = new Audio(audioSrc);
+      audio.addEventListener('timeupdate', updateProgress);
+      audio.addEventListener('ended', handleEnded);
+      audioRef.current = audio;
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeEventListener('timeupdate', updateProgress);
+        audioRef.current.removeEventListener('ended', handleEnded);
+      }
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  const updateProgress = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+      
+      // Find the active transition based on current time
+      const beatMarkers = template.beatMarkers;
+      for (let i = 0; i < beatMarkers.length - 1; i++) {
+        if (audioRef.current.currentTime >= beatMarkers[i] && 
+            audioRef.current.currentTime < beatMarkers[i + 1]) {
+          setActiveTransitionIndex(i);
+          break;
+        }
+      }
+      
+      animationRef.current = requestAnimationFrame(updateProgress);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setActiveTransitionIndex(-1);
+  };
+
+  const handlePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = null;
+        }
+      } else {
+        audioRef.current.play();
+        animationRef.current = requestAnimationFrame(updateProgress);
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleSeek = (value: number[]) => {
+    if (audioRef.current) {
+      const newTime = value[0];
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
   const handleVideoUpload = (videoUrls: string[]) => {
+    // Convert the URLs to File objects for this demo
+    const mockFiles = videoUrls.map((url, index) => {
+      // Create a mock File object
+      const file = new File([""], `video-${index + 1}.mp4`, { type: "video/mp4" });
+      return file;
+    });
+    
+    setUploadedVideos(mockFiles);
+    
     if (videoUrls.length > 0) {
       toast.success(`${videoUrls.length} clips added`);
-      // In a real app, we would process the video URLs here
     }
   };
   
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
+    const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const jumpToBeat = (index: number) => {
+    if (audioRef.current && template.beatMarkers[index]) {
+      audioRef.current.currentTime = template.beatMarkers[index];
+      setCurrentTime(template.beatMarkers[index]);
+      setActiveTransitionIndex(index);
+    }
   };
   
   return (
@@ -78,15 +173,114 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
             </p>
           </div>
           
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">Beat Pattern</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Beat Pattern</h3>
+              <button 
+                onClick={handlePlayPause} 
+                className="p-2 rounded-full bg-secondary hover:bg-secondary/70 transition-colors"
+              >
+                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              </button>
+            </div>
+            
             <AudioWaveform 
               trackId={template.id}
               beatMarkers={template.beatMarkers}
               duration={template.duration}
+              currentTime={currentTime}
+              isPlaying={isPlaying}
             />
+            
+            <div className="flex items-center gap-2">
+              <span className="text-xs w-10 text-muted-foreground">
+                {formatDuration(currentTime)}
+              </span>
+              <Slider 
+                value={[currentTime]}
+                min={0}
+                max={template.duration}
+                step={0.1}
+                onValueChange={handleSeek}
+                className="flex-1"
+              />
+              <span className="text-xs w-10 text-right text-muted-foreground">
+                {formatDuration(template.duration)}
+              </span>
+            </div>
+            
             <p className="text-xs text-muted-foreground">
               Each marker represents a beat where your clips will transition.
+            </p>
+          </div>
+          
+          {/* Beat Transition Visual Timeline */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">Transition Points</h3>
+            <div 
+              className="w-full h-16 bg-secondary/30 rounded-lg overflow-hidden relative p-2"
+              ref={timelineRef}
+            >
+              {/* Timeline markers */}
+              {template.beatMarkers.map((time, index) => {
+                const positionPercent = (time / template.duration) * 100;
+                return (
+                  <div 
+                    key={index}
+                    className={`absolute top-0 bottom-0 w-px bg-primary/50 cursor-pointer transition-opacity
+                               ${index === activeTransitionIndex ? 'opacity-100' : 'opacity-50'}`}
+                    style={{ left: `${positionPercent}%` }}
+                    onClick={() => jumpToBeat(index)}
+                  >
+                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 text-[10px] text-primary/70">
+                      {index + 1}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Clip transition segments */}
+              {template.beatMarkers.map((time, index) => {
+                if (index === template.beatMarkers.length - 1) return null;
+                
+                const startPercent = (time / template.duration) * 100;
+                const endPercent = (template.beatMarkers[index + 1] / template.duration) * 100;
+                const width = endPercent - startPercent;
+                
+                return (
+                  <div 
+                    key={`segment-${index}`}
+                    className={`absolute bottom-2 h-8 rounded-md border-2 border-dashed 
+                                transition-all duration-200 flex items-center justify-center
+                                ${index === activeTransitionIndex 
+                                   ? 'bg-primary/20 border-primary' 
+                                   : 'bg-secondary/50 border-secondary'}`}
+                    style={{ 
+                      left: `${startPercent}%`, 
+                      width: `${width}%`,
+                    }}
+                    onClick={() => jumpToBeat(index)}
+                  >
+                    <span className="text-xs font-medium truncate px-1">
+                      Clip {index + 1}
+                    </span>
+                  </div>
+                );
+              })}
+              
+              {/* Current time indicator */}
+              {isPlaying && (
+                <div 
+                  className="absolute top-0 bottom-0 w-0.5 bg-primary z-10 pointer-events-none"
+                  style={{ 
+                    left: `${(currentTime / template.duration) * 100}%`,
+                    boxShadow: '0 0 5px rgba(255, 255, 255, 0.8)' 
+                  }}
+                ></div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Click on a transition point to preview where your clips will change.
             </p>
           </div>
           
@@ -100,6 +294,9 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
               templateName={template.name}
               songName={template.trackName}
               artist={template.artist}
+              isReady={true}
+              onExport={() => console.log('Exporting template with clips', uploadedVideos)}
+              disabled={uploadedVideos.length === 0}
             />
           )}
         </div>

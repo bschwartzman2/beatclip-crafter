@@ -5,12 +5,16 @@ interface AudioWaveformProps {
   trackId?: string;
   beatMarkers: number[];
   duration: number;
+  currentTime?: number;
+  isPlaying?: boolean;
 }
 
 const AudioWaveform: React.FC<AudioWaveformProps> = ({ 
   trackId, 
   beatMarkers,
-  duration 
+  duration,
+  currentTime = 0,
+  isPlaying = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const waveformRef = useRef<HTMLDivElement>(null);
@@ -57,13 +61,29 @@ const AudioWaveform: React.FC<AudioWaveformProps> = ({
           return (
             <div 
               key={index}
-              className="beat-marker"
+              className={`absolute bottom-0 top-6 w-px bg-primary transition-opacity duration-200 ${
+                currentTime >= position && currentTime < (beatMarkers[index + 1] || duration)
+                  ? 'opacity-100' 
+                  : 'opacity-50'
+              }`}
               style={{
                 left: `${positionPercent}%`,
+                boxShadow: currentTime >= position && currentTime < (beatMarkers[index + 1] || duration)
+                  ? '0 0 4px rgba(255, 255, 255, 0.5)'
+                  : 'none'
               }}
             ></div>
           );
         })}
+        
+        {/* Current time indicator */}
+        <div 
+          className={`absolute top-0 bottom-0 w-0.5 bg-white/70 z-10 transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0'}`}
+          style={{ 
+            left: `${(currentTime / duration) * 100}%`,
+            boxShadow: '0 0 5px rgba(255, 255, 255, 0.5)'
+          }}
+        ></div>
       </div>
     </div>
   );

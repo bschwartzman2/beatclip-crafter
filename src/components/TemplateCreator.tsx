@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, Save, Loader2, Music2, BarChart2, Clock, Plus } from 'lucide-react';
 import SpotifySearch from './SpotifySearch';
@@ -13,7 +12,11 @@ interface Track {
   albumArt: string;
 }
 
-const TemplateCreator = () => {
+interface TemplateCreatorProps {
+  onTemplateCreated?: (template: any) => void;
+}
+
+const TemplateCreator: React.FC<TemplateCreatorProps> = ({ onTemplateCreated }) => {
   const navigate = useNavigate();
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -40,16 +43,12 @@ const TemplateCreator = () => {
   const analyzeBeat = () => {
     setIsAnalyzing(true);
     
-    // Simulate beat detection
     setTimeout(() => {
-      // Generate mock beat markers (in seconds)
       const mockBeatMarkers = [];
-      // Assume a song of 3 minutes (180 seconds) with beats every ~0.5 seconds
       const songDuration = 180;
       let currentBeat = 0;
       
       while (currentBeat < songDuration) {
-        // Add some randomness to the beat intervals to simulate a real song
         const interval = 0.5 + (Math.random() * 0.1 - 0.05);
         currentBeat += interval;
         mockBeatMarkers.push(currentBeat);
@@ -61,7 +60,6 @@ const TemplateCreator = () => {
         description: `${mockBeatMarkers.length} beats detected`
       });
       
-      // Set a default template name based on the track
       if (selectedTrack) {
         setTemplateName(`${selectedTrack.name} Template`);
       }
@@ -76,21 +74,28 @@ const TemplateCreator = () => {
     
     setIsSaving(true);
     
-    // Simulate saving template
     setTimeout(() => {
       setIsSaving(false);
       toast.success('Template saved successfully');
       
-      // Here you would normally save the template data to your backend
-      console.log('Template data:', {
+      const newTemplate = {
+        id: `template-${Date.now()}`,
         name: templateName,
-        track: selectedTrack,
+        trackName: selectedTrack?.name || 'Unknown Track',
+        artist: selectedTrack?.artist || 'Unknown Artist',
+        albumArt: selectedTrack?.albumArt || '',
         beatMarkers,
+        duration: 180,
         category: selectedCategory
-      });
+      };
       
-      // Redirect to the template detail page (using a mock ID for now)
-      navigate('/templates/1');
+      console.log('Template data:', newTemplate);
+      
+      if (onTemplateCreated) {
+        onTemplateCreated(newTemplate);
+      } else {
+        navigate('/templates/1');
+      }
     }, 1500);
   };
   
@@ -229,77 +234,6 @@ const TemplateCreator = () => {
                 <AudioWaveform 
                   trackId={selectedTrack.id}
                   beatMarkers={beatMarkers}
-                  duration={180} // Mock 3 minute duration
-                />
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div className="flex items-center p-3 bg-secondary/30 rounded-lg">
-                    <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <div className="text-xs text-muted-foreground">Duration</div>
-                      <div className="font-medium">3:00</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center p-3 bg-secondary/30 rounded-lg">
-                    <BarChart2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <div className="text-xs text-muted-foreground">Beat Density</div>
-                      <div className="font-medium">Medium</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="rounded-lg border bg-card overflow-hidden">
-                <div className="p-4 border-b">
-                  <h3 className="font-medium">Template Preview</h3>
-                </div>
-                <div className="p-4">
-                  <div className="aspect-video bg-secondary/30 rounded-lg flex items-center justify-center relative">
-                    <div className="grid grid-cols-2 gap-2 p-4 w-full max-w-xs">
-                      {[1, 2, 3, 4].map(index => (
-                        <div 
-                          key={index}
-                          className="aspect-square rounded-md bg-card/80 flex items-center justify-center border-2 border-dashed border-muted"
-                        >
-                          <Plus className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="absolute bottom-4 left-4 right-4 h-1 bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full w-1/3 bg-primary rounded-full" />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    Your videos will be synchronized with the detected beats
-                  </p>
-                </div>
-              </div>
-              
-              <div className="pt-4">
-                <button
-                  className="w-full flex items-center justify-center gap-2 p-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-                  onClick={handleSaveTemplate}
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Saving Template...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-5 w-5" />
-                      Save Template
-                    </>
-                  )}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
+                  duration={180}
 
-export default TemplateCreator;
+
