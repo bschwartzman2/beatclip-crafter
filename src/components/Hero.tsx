@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { ArrowRight, Music } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -31,7 +30,7 @@ const Hero = () => {
         </div>
         
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6 text-balance">
-          Create Beat-Synced <br className="hidden sm:inline" /> TikTok Templates
+          Create Beat-Synced <br className="hidden sm:inline" /> Templates for any of your videos
         </h1>
         
         <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
