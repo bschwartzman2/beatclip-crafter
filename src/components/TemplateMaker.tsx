@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Music, Clock, UploadCloud, Play, Pause, ChevronRight, ChevronLeft } from 'lucide-react';
 import VideoUploader from './VideoUploader';
@@ -207,61 +208,91 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Beat Pattern</h3>
-            <AudioTimeline
-              beatMarkers={template.beatMarkers}
-              duration={template.duration}
-              currentTime={currentTime}
-              isPlaying={isPlaying}
-              onSeek={(time) => {
-                if (audioRef.current) {
-                  audioRef.current.currentTime = time;
-                  setCurrentTime(time);
-                }
-              }}
-              onBeatClick={(index) => {
-                if (audioRef.current) {
-                  const time = template.beatMarkers[index];
-                  audioRef.current.currentTime = time;
-                  setCurrentTime(time);
-                  setActiveTransitionIndex(index);
-                }
-              }}
-            />
+        <div className="sm:w-2/3 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Beat Pattern</h3>
+                <AudioTimeline
+                  beatMarkers={template.beatMarkers}
+                  duration={template.duration}
+                  currentTime={currentTime}
+                  isPlaying={isPlaying}
+                  onSeek={(time) => {
+                    if (audioRef.current) {
+                      audioRef.current.currentTime = time;
+                      setCurrentTime(time);
+                    }
+                  }}
+                  onBeatClick={(index) => {
+                    if (audioRef.current) {
+                      const time = template.beatMarkers[index];
+                      audioRef.current.currentTime = time;
+                      setCurrentTime(time);
+                      setActiveTransitionIndex(index);
+                    }
+                  }}
+                />
+              </div>
+              
+              <div className="flex items-center justify-center space-x-4 my-4">
+                <button 
+                  className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+                  onClick={getPrevBeatIndex}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                
+                <button 
+                  className="p-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  onClick={handlePlayPause}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6" />
+                  )}
+                </button>
+                
+                <button 
+                  className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+                  onClick={getNextBeatIndex}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <VideoUploader onUpload={handleVideoUpload} />
+              
+              {uploadedVideos.length > 0 && (
+                <VideoExport 
+                  templateName={template.name}
+                  songName={template.trackName}
+                  artist={template.artist}
+                  isReady={true}
+                  onExport={() => console.log('Exporting template with clips', uploadedVideos)}
+                  disabled={uploadedVideos.length === 0}
+                />
+              )}
+            </div>
+            
+            <div className="space-y-6">
+              <ClipTransitions
+                beatMarkers={template.beatMarkers}
+                duration={template.duration}
+                currentTime={currentTime}
+                clipCount={template.beatMarkers.length}
+                onClipClick={(index) => {
+                  if (audioRef.current) {
+                    const time = template.beatMarkers[index];
+                    audioRef.current.currentTime = time;
+                    setCurrentTime(time);
+                    setActiveTransitionIndex(index);
+                  }
+                }}
+              />
+            </div>
           </div>
-          
-          <VideoUploader onUpload={handleVideoUpload} />
-          
-          {uploadedVideos.length > 0 && (
-            <VideoExport 
-              templateName={template.name}
-              songName={template.trackName}
-              artist={template.artist}
-              isReady={true}
-              onExport={() => console.log('Exporting template with clips', uploadedVideos)}
-              disabled={uploadedVideos.length === 0}
-            />
-          )}
-        </div>
-        
-        <div className="space-y-6">
-          <ClipTransitions
-            beatMarkers={template.beatMarkers}
-            duration={template.duration}
-            currentTime={currentTime}
-            clipCount={template.beatMarkers.length}
-            onClipClick={(index) => {
-              if (audioRef.current) {
-                const time = template.beatMarkers[index];
-                audioRef.current.currentTime = time;
-                setCurrentTime(time);
-                setActiveTransitionIndex(index);
-              }
-            }}
-          />
         </div>
       </div>
     </div>
