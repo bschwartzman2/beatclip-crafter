@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Music, Clock, UploadCloud, Play, Pause } from 'lucide-react';
+import { Music, Clock, UploadCloud, Play, Pause, ChevronRight, ChevronLeft } from 'lucide-react';
 import VideoUploader from './VideoUploader';
 import VideoExport from './VideoExport';
 import AudioWaveform from './AudioWaveform';
@@ -24,6 +24,8 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [activeTransitionIndex, setActiveTransitionIndex] = useState<number>(-1);
+  const [clipDurations, setClipDurations] = useState<number[]>([]);
+  const [showDetailedView, setShowDetailedView] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -40,6 +42,9 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
       audioRef.current = audio;
     }
 
+    // Calculate clip durations based on beat markers
+    calculateClipDurations();
+
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -50,7 +55,22 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, []);
+  }, [template.beatMarkers]);
+
+  const calculateClipDurations = () => {
+    // Calculate the duration of each clip based on beat markers
+    const durations: number[] = [];
+    for (let i = 0; i < template.beatMarkers.length - 1; i++) {
+      const clipDuration = template.beatMarkers[i + 1] - template.beatMarkers[i];
+      durations.push(clipDuration);
+    }
+    // Add the last clip duration (from last marker to end of song)
+    if (template.beatMarkers.length > 0) {
+      const lastDuration = template.duration - template.beatMarkers[template.beatMarkers.length - 1];
+      durations.push(lastDuration);
+    }
+    setClipDurations(durations);
+  };
 
   const updateProgress = () => {
     if (audioRef.current) {
@@ -58,9 +78,9 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
       
       // Find the active transition based on current time
       const beatMarkers = template.beatMarkers;
-      for (let i = 0; i < beatMarkers.length - 1; i++) {
+      for (let i = 0; i < beatMarkers.length; i++) {
         if (audioRef.current.currentTime >= beatMarkers[i] && 
-            audioRef.current.currentTime < beatMarkers[i + 1]) {
+            (i === beatMarkers.length - 1 || audioRef.current.currentTime < beatMarkers[i + 1])) {
           setActiveTransitionIndex(i);
           break;
         }
@@ -122,10 +142,31 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
   };
 
   const jumpToBeat = (index: number) => {
-    if (audioRef.current && template.beatMarkers[index]) {
+    if (audioRef.current && template.beatMarkers[index] !== undefined) {
       audioRef.current.currentTime = template.beatMarkers[index];
       setCurrentTime(template.beatMarkers[index]);
       setActiveTransitionIndex(index);
+    }
+  };
+
+  const getNextBeatIndex = () => {
+    const nextIndex = activeTransitionIndex + 1;
+    if (nextIndex < template.beatMarkers.length) {
+      jumpToBeat(nextIndex);
+    }
+  };
+
+  const getPrevBeatIndex = () => {
+    const prevIndex = activeTransitionIndex - 1;
+    if (prevIndex >= 0) {
+      jumpToBeat(prevIndex);
+    } else {
+      // Jump to beginning of song
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        setCurrentTime(0);
+        setActiveTransitionIndex(-1);
+      }
     }
   };
   
@@ -176,12 +217,26 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">Beat Pattern</h3>
-              <button 
-                onClick={handlePlayPause} 
-                className="p-2 rounded-full bg-secondary hover:bg-secondary/70 transition-colors"
-              >
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={getPrevBeatIndex} 
+                  className="p-2 rounded-full bg-secondary hover:bg-secondary/70 transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={handlePlayPause} 
+                  className="p-2 rounded-full bg-secondary hover:bg-secondary/70 transition-colors"
+                >
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </button>
+                <button 
+                  onClick={getNextBeatIndex} 
+                  className="p-2 rounded-full bg-secondary hover:bg-secondary/70 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             
             <AudioWaveform 
@@ -216,7 +271,15 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
           
           {/* Beat Transition Visual Timeline */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Transition Points</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Transition Points</h3>
+              <button 
+                onClick={() => setShowDetailedView(!showDetailedView)} 
+                className="text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                {showDetailedView ? "Simple View" : "Detailed View"}
+              </button>
+            </div>
             <div 
               className="w-full h-16 bg-secondary/30 rounded-lg overflow-hidden relative p-2"
               ref={timelineRef}
@@ -268,6 +331,26 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
                 );
               })}
               
+              {/* Add the final clip */}
+              {template.beatMarkers.length > 0 && (
+                <div 
+                  className={`absolute bottom-2 h-8 rounded-md border-2 border-dashed 
+                              transition-all duration-200 flex items-center justify-center
+                              ${activeTransitionIndex === template.beatMarkers.length - 1 
+                                 ? 'bg-primary/20 border-primary' 
+                                 : 'bg-secondary/50 border-secondary'}`}
+                  style={{ 
+                    left: `${(template.beatMarkers[template.beatMarkers.length - 1] / template.duration) * 100}%`, 
+                    width: `${100 - (template.beatMarkers[template.beatMarkers.length - 1] / template.duration) * 100}%`,
+                  }}
+                  onClick={() => jumpToBeat(template.beatMarkers.length - 1)}
+                >
+                  <span className="text-xs font-medium truncate px-1">
+                    Clip {template.beatMarkers.length}
+                  </span>
+                </div>
+              )}
+              
               {/* Current time indicator */}
               {isPlaying && (
                 <div 
@@ -279,6 +362,45 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
                 ></div>
               )}
             </div>
+            
+            {showDetailedView && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 animate-fade-in">
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium">Clip Durations</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                    {clipDurations.map((duration, index) => (
+                      <div 
+                        key={`duration-${index}`}
+                        className={`flex items-center justify-between p-2 rounded-md text-xs ${
+                          index === activeTransitionIndex ? 'bg-primary/10 border border-primary/20' : 'bg-secondary/30'
+                        }`}
+                      >
+                        <span>Clip {index + 1}</span>
+                        <span>{duration.toFixed(2)}s</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium">Transition Timestamps</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                    {template.beatMarkers.map((time, index) => (
+                      <div 
+                        key={`timestamp-${index}`} 
+                        className={`flex items-center justify-between p-2 rounded-md text-xs cursor-pointer ${
+                          index === activeTransitionIndex ? 'bg-primary/10 border border-primary/20' : 'bg-secondary/30'
+                        }`}
+                        onClick={() => jumpToBeat(index)}
+                      >
+                        <span>Beat {index + 1}</span>
+                        <span>{formatDuration(time)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <p className="text-xs text-muted-foreground">
               Click on a transition point to preview where your clips will change.
             </p>

@@ -28,14 +28,27 @@ const AudioWaveform: React.FC<AudioWaveformProps> = ({
     
     for (let i = 0; i < barCount; i++) {
       const bar = document.createElement('div');
-      const height = Math.floor(Math.random() * 80) + 20;
+      
+      // Make the height vary more near beat markers to simulate louder sound at beats
+      let height = Math.floor(Math.random() * 80) + 20;
+      
+      // Check if this bar is near a beat marker
+      const barPosition = (i / barCount) * duration;
+      const nearBeat = beatMarkers.some(marker => 
+        Math.abs(marker - barPosition) < duration / barCount
+      );
+      
+      if (nearBeat) {
+        // Make beat markers taller
+        height = Math.floor(Math.random() * 20) + 80;
+      }
       
       bar.className = 'bg-primary/30 w-1 rounded-t transition-all duration-300';
       bar.style.height = `${height}%`;
       
       waveformRef.current.appendChild(bar);
     }
-  }, [trackId]);
+  }, [trackId, beatMarkers, duration]);
   
   return (
     <div className="w-full h-40 bg-secondary/30 rounded-lg p-4 relative" ref={containerRef}>
@@ -62,17 +75,23 @@ const AudioWaveform: React.FC<AudioWaveformProps> = ({
             <div 
               key={index}
               className={`absolute bottom-0 top-6 w-px bg-primary transition-opacity duration-200 ${
-                currentTime >= position && currentTime < (beatMarkers[index + 1] || duration)
+                currentTime >= position && 
+                (index === beatMarkers.length - 1 || currentTime < beatMarkers[index + 1])
                   ? 'opacity-100' 
                   : 'opacity-50'
               }`}
               style={{
                 left: `${positionPercent}%`,
-                boxShadow: currentTime >= position && currentTime < (beatMarkers[index + 1] || duration)
+                boxShadow: currentTime >= position && 
+                          (index === beatMarkers.length - 1 || currentTime < beatMarkers[index + 1])
                   ? '0 0 4px rgba(255, 255, 255, 0.5)'
                   : 'none'
               }}
-            ></div>
+            >
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 text-[8px] text-primary/70">
+                {index + 1}
+              </div>
+            </div>
           );
         })}
         
