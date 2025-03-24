@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, Save, Loader2, Music2, BarChart2, Clock, Plus } from 'lucide-react';
 import SpotifySearch from './SpotifySearch';
@@ -235,5 +236,40 @@ const TemplateCreator: React.FC<TemplateCreatorProps> = ({ onTemplateCreated }) 
                   trackId={selectedTrack.id}
                   beatMarkers={beatMarkers}
                   duration={180}
+                  currentTime={0}
+                  isPlaying={isPlaying}
+                />
+              </div>
+              
+              <div className="pt-4">
+                <button
+                  className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-colors ${
+                    isSaving
+                      ? 'bg-primary/70 text-primary-foreground cursor-not-allowed'
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  }`}
+                  onClick={handleSaveTemplate}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Saving Template...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-5 w-5" />
+                      Save Template
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
-
+export default TemplateCreator;
