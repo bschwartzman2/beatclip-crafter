@@ -21,8 +21,11 @@ interface TemplateMakerProps {
 const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
   const [uploadedVideos, setUploadedVideos] = useState<File[]>([]);
   
-  const handleVideoUpload = (file: File) => {
-    setUploadedVideos(prev => [...prev, file]);
+  const handleVideoUpload = (videoUrls: string[]) => {
+    if (videoUrls.length > 0) {
+      toast.success(`${videoUrls.length} clips added`);
+      // In a real app, we would process the video URLs here
+    }
   };
   
   const formatDuration = (seconds: number) => {
@@ -89,7 +92,7 @@ const TemplateMaker: React.FC<TemplateMakerProps> = ({ template }) => {
           
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Upload Your Clips</h3>
-            <VideoUploader onVideoUpload={handleVideoUpload} />
+            <VideoUploader onUpload={handleVideoUpload} />
           </div>
           
           {uploadedVideos.length > 0 && (
