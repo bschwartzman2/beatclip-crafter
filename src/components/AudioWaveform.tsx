@@ -50,6 +50,11 @@ const AudioWaveform: React.FC<AudioWaveformProps> = ({
     }
   }, [trackId, beatMarkers, duration]);
   
+  // Find active beat marker
+  const activeBeatIndex = beatMarkers.findIndex((time, index) => 
+    currentTime >= time && (index === beatMarkers.length - 1 || currentTime < beatMarkers[index + 1])
+  );
+  
   return (
     <div className="w-full h-40 bg-secondary/30 rounded-lg p-4 relative" ref={containerRef}>
       <div className="absolute top-2 left-4 text-xs font-medium text-muted-foreground">
@@ -70,27 +75,42 @@ const AudioWaveform: React.FC<AudioWaveformProps> = ({
         {beatMarkers.map((position, index) => {
           // Convert beat position (seconds) to percentage of total duration
           const positionPercent = (position / duration) * 100;
+          const isActive = index === activeBeatIndex;
           
           return (
             <div 
               key={index}
-              className={`absolute bottom-0 top-6 w-px bg-primary transition-opacity duration-200 ${
-                currentTime >= position && 
-                (index === beatMarkers.length - 1 || currentTime < beatMarkers[index + 1])
-                  ? 'opacity-100' 
-                  : 'opacity-50'
-              }`}
+              className="absolute bottom-0 top-6 flex flex-col items-center"
               style={{
                 left: `${positionPercent}%`,
-                boxShadow: currentTime >= position && 
-                          (index === beatMarkers.length - 1 || currentTime < beatMarkers[index + 1])
-                  ? '0 0 4px rgba(255, 255, 255, 0.5)'
-                  : 'none'
               }}
             >
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 text-[8px] text-primary/70">
+              {/* Beat number */}
+              <div className={`absolute -top-3 text-[8px] font-medium transition-colors ${isActive ? 'text-primary' : 'text-primary/70'}`}>
                 {index + 1}
               </div>
+              
+              {/* Pulse animation for active beat */}
+              {isActive && (
+                <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary/20 animate-ping"></div>
+              )}
+              
+              {/* Beat marker dot */}
+              <div className={`absolute top-1/2 -translate-y-1/2 -ml-1 w-2 h-2 rounded-full transition-all ${
+                isActive ? 'bg-primary scale-125' : 'bg-primary/60'
+              }`}></div>
+              
+              {/* Vertical line */}
+              <div 
+                className={`w-px h-full ${
+                  isActive 
+                    ? 'bg-primary opacity-100' 
+                    : 'bg-primary/50 opacity-50'
+                } transition-opacity duration-200`}
+                style={{
+                  boxShadow: isActive ? '0 0 4px rgba(255, 255, 255, 0.5)' : 'none'
+                }}
+              ></div>
             </div>
           );
         })}
@@ -102,7 +122,9 @@ const AudioWaveform: React.FC<AudioWaveformProps> = ({
             left: `${(currentTime / duration) * 100}%`,
             boxShadow: '0 0 5px rgba(255, 255, 255, 0.5)'
           }}
-        ></div>
+        >
+          <div className="absolute -top-1 -ml-1.5 w-3 h-3 bg-white/70 rounded-full"></div>
+        </div>
       </div>
     </div>
   );
